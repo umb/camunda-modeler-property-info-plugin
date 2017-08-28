@@ -71,3 +71,13 @@
     overflow: hidden;
     z-index: 9999;
 }
+
+.show-el-id {
+    background-color: saddlebrown;
+    display: block;
+    color: white;
+    padding: 1px 6px 3px 6px;
+    border-radius: 10px;
+    margin: -10px 0 0 -49px;
+    font-size: 10px;
+}

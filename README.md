@@ -5,8 +5,8 @@
 <h4 align="center">This plugin serves a better overview which properties are set per shape.</h4>
 
 <p align="center">
-    <img src="https://img.shields.io/badge/version-0.0.2-brightgreen.svg"
-         alt="version 0.0.2">
+    <img src="https://img.shields.io/badge/version-0.0.3-brightgreen.svg"
+         alt="version 0.0.3">
   <a href="https://github.com/camunda/camunda-modeler"><img src="https://img.shields.io/badge/modeler-1.9.0-brightgreen.svg"
          alt="version 1.9.0"></a>
   <a href="http://www.apache.org/licenses/"><img src="https://img.shields.io/badge/license-Apache_2.0-blue.svg"

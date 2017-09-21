@@ -33,7 +33,7 @@ module.exports = function(electronApp, menuState) {
           }
       },
       {
-          label: 'Version: 0.0.2',
+          label: 'Version: 0.0.3',
           enabled: function() {
               return false
           },

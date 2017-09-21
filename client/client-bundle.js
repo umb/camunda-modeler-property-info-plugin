@@ -306,6 +306,10 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions, 
 
     function addStyle(element) {
 
+        if (!overlaysVisible) {
+            return;
+        }
+
         if (elementOverlays[element.id] !== undefined && elementOverlays[element.id].length !== 0) {
             for (var overlay in elementOverlays[element.id]) {
                 overlays.remove(elementOverlays[element.id][overlay]);
@@ -340,10 +344,6 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions, 
 
         //Do not process the label of an element
         if (element.type === "label") {
-            return;
-        }
-
-        if (!overlaysVisible) {
             return;
         }
 

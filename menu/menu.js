@@ -31,6 +31,14 @@ module.exports = function(electronApp, menuState) {
           action: function() {
               electronApp.emit('menu:action', 'toggleTransactionOverlays');
           }
+      },
+      {
+          label: 'Version: 0.0.2',
+          enabled: function() {
+              return false
+          },
+          action: function() {
+          }
       }
   ];
 };

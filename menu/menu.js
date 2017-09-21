@@ -26,7 +26,7 @@ module.exports = function(electronApp, menuState) {
           label: 'Toggle Transaction Overlay',
           accelerator: 'Alt+T',
           enabled: function() {
-              return false;
+              return menuState.bpmn;
           },
           action: function() {
               electronApp.emit('menu:action', 'toggleTransactionOverlays');

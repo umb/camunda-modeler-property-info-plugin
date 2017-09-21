@@ -3,7 +3,7 @@
 module.exports = function(electronApp, menuState) {
   return [
       {
-          label: 'Toggle Overlay',
+          label: 'Toggle Property Overlay',
           accelerator: 'Alt+Y',
           enabled: function() {
               return menuState.bpmn;
@@ -13,7 +13,7 @@ module.exports = function(electronApp, menuState) {
           }
       },
       {
-          label: 'Toggle Overlay',
+          label: 'Toggle Element Id Overlay',
           accelerator: 'Alt+X',
           enabled: function() {
               return menuState.bpmn;

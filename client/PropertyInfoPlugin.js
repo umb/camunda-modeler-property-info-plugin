@@ -3,8 +3,10 @@
 var _ = require('lodash');
 
 var elementOverlays = [];
+var elementIdOverlays = [];
+
 var overlaysVisible = true;
-var overlaysIdVisible = true;
+var overlaysIdVisible = false;
 
 function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) {
 
@@ -74,7 +76,6 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
                 var elementObject = elements[elementCount];
                 if (elementObject.businessObject.$instanceOf('bpmn:FlowNode') || elementObject.businessObject.$instanceOf('bpmn:Participant')) {
                     addStyle(elementObject);
-                    overlaysIdVisible = true;
                 }
             }
         }
@@ -83,6 +84,16 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
     function toggleIdOverlays() {
         if (overlaysIdVisible) {
             overlaysIdVisible = false;
+            if (elementIdOverlays !== undefined) {
+                for (var elementCount in elementIdOverlays) {
+                    var elementObject = elementIdOverlays[elementCount];
+                    for (var overlay in elementObject) {
+                        overlays.remove(elementObject[overlay]);
+                    }
+                }
+            }
+        } else {
+            overlaysIdVisible = true;
             var elements = elementRegistry.getAll();
             for (var elementCount in elements) {
                 var elementObject = elements[elementCount];
@@ -90,21 +101,18 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
                     addElementIdStyle(elementObject);
                 }
             }
-        } else {
-            overlaysIdVisible = true;
-            if (elementOverlays !== undefined) {
-                for (var elementCount in elementOverlays) {
-                    var elementObject = elementOverlays[elementCount];
-                    for (var overlay in elementObject) {
-                        overlays.remove(elementObject[overlay]);
-                        overlaysVisible = false;
-                    }
-                }
-            }
         }
     }
 
     function addElementIdStyle(element) {
+
+        if (elementIdOverlays[element.id] !== undefined && elementIdOverlays[element.id].length !== 0) {
+            for (var overlay in elementIdOverlays[element.id]) {
+                overlays.remove(elementIdOverlays[element.id][overlay]);
+            }
+        }
+
+        elementIdOverlays[element.id] = [];
 
         if (element.businessObject.id !== undefined &&
             element.businessObject.id.length > 0 &&
@@ -113,7 +121,7 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
             var text = element.businessObject.id;
             text = text.replace(/(?:\r\n|\r|\n)/g, '<br />');
 
-            elementOverlays[element.id].push(
+            elementIdOverlays[element.id].push(
                 overlays.add(element, 'badge', {
                     position: {
                         top: 4,

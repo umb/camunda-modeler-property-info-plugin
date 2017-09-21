@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://www.example.org/bpmn" exporter="Camunda Modeler" exporterVersion="1.8.2" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
+<bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://www.example.org/bpmn" exporter="Camunda Modeler" exporterVersion="1.9.0" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
   <bpmn2:collaboration id="Collaboration_1" name="Default Collaboration">
     <bpmn2:participant id="pool-underwriting" name="Insurance Underwriting" processRef="underwriting" />
   </bpmn2:collaboration>
@@ -46,6 +46,7 @@
     </bpmn2:serviceTask>
     <bpmn2:sequenceFlow id="SequenceFlow_7" sourceRef="checkDuplicates" targetRef="userTaskReviewData" />
     <bpmn2:businessRuleTask id="assignUnderwriter" name="determine underwriter" camunda:resultVariable="underwriter" camunda:decisionRef="determineUnderwriter" camunda:mapDecisionResult="singleEntry">
+      <bpmn2:documentation>We use a dedicated table to determine the underwriter.</bpmn2:documentation>
       <bpmn2:extensionElements>
         <camunda:inputOutput>
           <camunda:inputParameter name="Input_0cch84f" />
@@ -68,6 +69,7 @@
     <bpmn2:sequenceFlow id="SequenceFlow_11" name="" sourceRef="startEventPaperApplication" targetRef="enterApplicationData" />
     <bpmn2:sequenceFlow id="SequenceFlow_12" name="" sourceRef="enterApplicationData" targetRef="ExclusiveGateway_1" />
     <bpmn2:exclusiveGateway id="ExclusiveGateway_2" name="approved?">
+      <bpmn2:documentation>Approved the underwriter this insurance?</bpmn2:documentation>
       <bpmn2:extensionElements>
         <camunda:executionListener class="" event="start" />
       </bpmn2:extensionElements>

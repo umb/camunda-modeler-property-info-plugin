@@ -4,7 +4,7 @@ module.exports = function(electronApp, menuState) {
   return [
       {
           label: 'Toggle Property Overlay',
-          accelerator: 'Alt+Y',
+          accelerator: 'Alt+P',
           enabled: function() {
               return menuState.bpmn;
           },
@@ -14,12 +14,22 @@ module.exports = function(electronApp, menuState) {
       },
       {
           label: 'Toggle Element Id Overlay',
-          accelerator: 'Alt+X',
+          accelerator: 'Alt+I',
           enabled: function() {
               return menuState.bpmn;
           },
           action: function() {
               electronApp.emit('menu:action', 'togglePropertyIdOverlays');
+          }
+      },
+      {
+          label: 'Toggle Transaction Overlay',
+          accelerator: 'Alt+T',
+          enabled: function() {
+              return false;
+          },
+          action: function() {
+              electronApp.emit('menu:action', 'toggleTransactionOverlays');
           }
       }
   ];

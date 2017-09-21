@@ -26,7 +26,8 @@
   "devDependencies": {
     "browserify": "^14.1.0",
     "camunda-modeler-plugin-helpers": "^1.7.0",
-    "watchify": "^3.9.0"
+    "watchify": "^3.9.0",
+    "min-dom": "^0.2.0"
   },
   "dependencies": {
     "lodash": "^3.10.1"

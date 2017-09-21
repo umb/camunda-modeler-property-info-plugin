@@ -2,14 +2,17 @@
 'use strict';
 
 var _ = require('lodash');
+var domify = require('min-dom/lib/domify');
 
 var elementOverlays = [];
 var elementIdOverlays = [];
+var elementTransactionOverlays = [];
 
 var overlaysVisible = true;
 var overlaysIdVisible = false;
+var overlaysTransactionVisible = false;
 
-function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) {
+function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions, canvas) {
 
     eventBus.on('shape.changed', function (event) {
         _.defer(function () {
@@ -38,7 +41,20 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
         },
         togglePropertyIdOverlays: function () {
             toggleIdOverlays();
+        },
+        toggleTransactionOverlays: function () {
+            toggleTransactionOverlays();
         }
+    });
+
+
+    var toggelinfo = '<div id="toggleOverlayer" class="overlay">Properties enabled</div>';
+
+    var element = domify(toggelinfo);
+    canvas.getContainer().appendChild(element);
+
+    _.defer(function () {
+        showOverlayerMessage("Properties enabled")
     });
 
     function changeShape(event) {
@@ -48,6 +64,8 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
         }
         _.defer(function () {
             addStyle(element);
+            addTransactionStyle(element);
+            addElementIdStyle(element);
         });
     }
 
@@ -57,10 +75,25 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
             overlays.remove(elementObject[overlay]);
         }
         delete elementOverlays[element.id];
+
+        elementObject = elementIdOverlays[element.id];
+        for (overlay in elementObject) {
+            overlays.remove(elementObject[overlay]);
+        }
+        delete elementIdOverlays[element.id];
+
+        elementObject = elementTransactionOverlays[element.id];
+        for (overlay in elementObject) {
+            overlays.remove(elementObject[overlay]);
+        }
+        delete elementTransactionOverlays[element.id];
     }
 
     function toggleOverlays() {
         if (overlaysVisible) {
+            _.defer(function () {
+                showOverlayerMessage("Properties disabled")
+            });
             overlaysVisible = false;
             if (elementOverlays !== undefined) {
                 for (var elementCount in elementOverlays) {
@@ -71,6 +104,9 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
                 }
             }
         } else {
+            _.defer(function () {
+                showOverlayerMessage("Properties enabled")
+            });
             overlaysVisible = true;
             var elements = elementRegistry.getAll();
             for (var elementCount in elements) {
@@ -84,6 +120,9 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
 
     function toggleIdOverlays() {
         if (overlaysIdVisible) {
+            _.defer(function () {
+                showOverlayerMessage("ElementId's disabled")
+            });
             overlaysIdVisible = false;
             if (elementIdOverlays !== undefined) {
                 for (var elementCount in elementIdOverlays) {
@@ -94,6 +133,9 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
                 }
             }
         } else {
+            _.defer(function () {
+                showOverlayerMessage("ElementId's enabled")
+            });
             overlaysIdVisible = true;
             var elements = elementRegistry.getAll();
             for (var elementCount in elements) {
@@ -105,8 +147,131 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
         }
     }
 
-    function addElementIdStyle(element) {
+    function toggleTransactionOverlays() {
+        if (overlaysTransactionVisible) {
+            _.defer(function () {
+                showOverlayerMessage("Transactions disabled")
+            });
+            overlaysTransactionVisible = false;
+            if (elementTransactionOverlays !== undefined) {
+                for (var elementCount in elementTransactionOverlays) {
+                    var elementObject = elementTransactionOverlays[elementCount];
+                    for (var overlay in elementObject) {
+                        overlays.remove(elementObject[overlay]);
+                    }
+                }
+            }
+        } else {
+            _.defer(function () {
+                showOverlayerMessage("Transactions enabled")
+            });
+            overlaysTransactionVisible = true;
+            var elements = elementRegistry.getAll();
+            for (var elementCount in elements) {
+                var elementObject = elements[elementCount];
+                if (elementObject.businessObject.$instanceOf('bpmn:FlowNode') || elementObject.businessObject.$instanceOf('bpmn:Participant')) {
+                    addTransactionStyle(elementObject);
+                }
+            }
+        }
+    }
 
+    function addTransactionStyle(element) {
+        if (elementTransactionOverlays[element.id] !== undefined && elementTransactionOverlays[element.id].length !== 0) {
+            for (var overlay in elementTransactionOverlays[element.id]) {
+                overlays.remove(elementTransactionOverlays[element.id][overlay]);
+            }
+        }
+
+        elementTransactionOverlays[element.id] = [];
+
+        //Do not process the label of an element
+        if (element.type === "label") {
+            return;
+        }
+
+        if (!overlaysTransactionVisible) {
+            return;
+        }
+
+        var incomings = element.incoming;
+        var outgoings = element.outgoing;
+
+        for (var incoming in incomings) {
+            if (element.businessObject.asyncBefore) {
+                if (incomings[incoming].type === "bpmn:SequenceFlow") {
+
+                    var top = element.y - incomings[incoming].waypoints[incomings[incoming].waypoints.length - 1].y;
+                    var left = element.x - incomings[incoming].waypoints[incomings[incoming].waypoints.length - 1].x;
+                    elementTransactionOverlays[element.id].push(
+                        overlays.add(element, 'badge', {
+                            position: {
+                                top: -top,
+                                left: -left
+                            },
+                            html: '<div class="transaction transaction-before" data-badge="T"></div>'
+                        })
+                    );
+                }
+            }
+        }
+
+        for (var outgoing in outgoings) {
+            if (element.businessObject.asyncAfter) {
+                if (outgoings[outgoing].type === "bpmn:SequenceFlow") {
+
+                    var top = element.y - outgoings[outgoing].waypoints[0].y;
+                    var left = element.x - outgoings[outgoing].waypoints[0].x;
+                    elementTransactionOverlays[element.id].push(
+                        overlays.add(element, 'badge', {
+                            position: {
+                                top: -top,
+                                left: -left
+                            },
+                            html: '<div class="transaction transaction-after" data-badge="T"></div>'
+                        })
+                    );
+                }
+            }
+        }
+
+        //Calculate Async on start & end nodes
+        if (outgoings.length === 0 && element.businessObject.asyncAfter) {
+            elementTransactionOverlays[element.id].push(
+                overlays.add(element, 'badge', {
+                    position: {
+                        top: element.height / 2,
+                        left: element.width
+                    },
+                    html: '<div class="transaction transaction-after" data-badge="T"></div>'
+                })
+            );
+        }
+
+        //Calculate Async on start & end nodes
+        if (incomings.length === 0 && element.businessObject.asyncBefore) {
+            elementTransactionOverlays[element.id].push(
+                overlays.add(element, 'badge', {
+                    position: {
+                        top: element.height / 2,
+                        left: 0
+                    },
+                    html: '<div class="transaction transaction-before" data-badge="T"></div>'
+                })
+            );
+        }
+
+    }
+
+    function showOverlayerMessage(message) {
+        document.getElementById("toggleOverlayer").innerHTML = message;
+        document.getElementById("toggleOverlayer").style.opacity = 100;
+        window.setTimeout(function () {
+            document.getElementById("toggleOverlayer").style.opacity = 0;
+        }, 4000);
+    }
+
+    function addElementIdStyle(element) {
         if (elementIdOverlays[element.id] !== undefined && elementIdOverlays[element.id].length !== 0) {
             for (var overlay in elementIdOverlays[element.id]) {
                 overlays.remove(elementIdOverlays[element.id][overlay]);
@@ -115,9 +280,13 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
 
         elementIdOverlays[element.id] = [];
 
+        if (!overlaysIdVisible) {
+            return;
+        }
+
         if (element.businessObject.id !== undefined &&
             element.businessObject.id.length > 0 &&
-            element.type !== "label" ) {
+            element.type !== "label") {
 
             var text = element.businessObject.id;
             text = text.replace(/(?:\r\n|\r|\n)/g, '<br />');
@@ -380,13 +549,13 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
 
 }
 
-PropertyInfoPlugin.$inject = ['eventBus', 'overlays', 'elementRegistry', 'editorActions'];
+PropertyInfoPlugin.$inject = ['eventBus', 'overlays', 'elementRegistry', 'editorActions', 'canvas'];
 
 module.exports = {
     __init__: ['clientPlugin'],
     clientPlugin: ['type', PropertyInfoPlugin]
 };
-},{"lodash":4}],2:[function(require,module,exports){
+},{"lodash":5,"min-dom/lib/domify":6}],2:[function(require,module,exports){
 var registerBpmnJSPlugin = require('camunda-modeler-plugin-helpers').registerBpmnJSPlugin;
 var plugin = require('./PropertyInfoPlugin');
 
@@ -436,6 +605,120 @@ function registerBpmnJSPlugin(plugin) {
 module.exports.registerBpmnJSPlugin = registerBpmnJSPlugin;
 
 },{}],4:[function(require,module,exports){
+
+/**
+ * Expose `parse`.
+ */
+
+module.exports = parse;
+
+/**
+ * Tests for browser support.
+ */
+
+var innerHTMLBug = false;
+var bugTestDiv;
+if (typeof document !== 'undefined') {
+  bugTestDiv = document.createElement('div');
+  // Setup
+  bugTestDiv.innerHTML = '  <link/><table></table><a href="/a">a</a><input type="checkbox"/>';
+  // Make sure that link elements get serialized correctly by innerHTML
+  // This requires a wrapper element in IE
+  innerHTMLBug = !bugTestDiv.getElementsByTagName('link').length;
+  bugTestDiv = undefined;
+}
+
+/**
+ * Wrap map from jquery.
+ */
+
+var map = {
+  legend: [1, '<fieldset>', '</fieldset>'],
+  tr: [2, '<table><tbody>', '</tbody></table>'],
+  col: [2, '<table><tbody></tbody><colgroup>', '</colgroup></table>'],
+  // for script/link/style tags to work in IE6-8, you have to wrap
+  // in a div with a non-whitespace character in front, ha!
+  _default: innerHTMLBug ? [1, 'X<div>', '</div>'] : [0, '', '']
+};
+
+map.td =
+map.th = [3, '<table><tbody><tr>', '</tr></tbody></table>'];
+
+map.option =
+map.optgroup = [1, '<select multiple="multiple">', '</select>'];
+
+map.thead =
+map.tbody =
+map.colgroup =
+map.caption =
+map.tfoot = [1, '<table>', '</table>'];
+
+map.polyline =
+map.ellipse =
+map.polygon =
+map.circle =
+map.text =
+map.line =
+map.path =
+map.rect =
+map.g = [1, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">','</svg>'];
+
+/**
+ * Parse `html` and return a DOM Node instance, which could be a TextNode,
+ * HTML DOM Node of some kind (<div> for example), or a DocumentFragment
+ * instance, depending on the contents of the `html` string.
+ *
+ * @param {String} html - HTML string to "domify"
+ * @param {Document} doc - The `document` instance to create the Node for
+ * @return {DOMNode} the TextNode, DOM Node, or DocumentFragment instance
+ * @api private
+ */
+
+function parse(html, doc) {
+  if ('string' != typeof html) throw new TypeError('String expected');
+
+  // default to the global `document` object
+  if (!doc) doc = document;
+
+  // tag name
+  var m = /<([\w:]+)/.exec(html);
+  if (!m) return doc.createTextNode(html);
+
+  html = html.replace(/^\s+|\s+$/g, ''); // Remove leading/trailing whitespace
+
+  var tag = m[1];
+
+  // body support
+  if (tag == 'body') {
+    var el = doc.createElement('html');
+    el.innerHTML = html;
+    return el.removeChild(el.lastChild);
+  }
+
+  // wrap map
+  var wrap = map[tag] || map._default;
+  var depth = wrap[0];
+  var prefix = wrap[1];
+  var suffix = wrap[2];
+  var el = doc.createElement('div');
+  el.innerHTML = prefix + html + suffix;
+  while (depth--) el = el.lastChild;
+
+  // one element
+  if (el.firstChild == el.lastChild) {
+    return el.removeChild(el.firstChild);
+  }
+
+  // several elements
+  var fragment = doc.createDocumentFragment();
+  while (el.firstChild) {
+    fragment.appendChild(el.removeChild(el.firstChild));
+  }
+
+  return fragment;
+}
+
+},{}],5:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -12790,4 +13073,6 @@ module.exports.registerBpmnJSPlugin = registerBpmnJSPlugin;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[2]);
+},{}],6:[function(require,module,exports){
+module.exports = require('domify');
+},{"domify":4}]},{},[2]);

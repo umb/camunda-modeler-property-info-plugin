@@ -1,14 +1,17 @@
 'use strict';
 
 var _ = require('lodash');
+var domify = require('min-dom/lib/domify');
 
 var elementOverlays = [];
 var elementIdOverlays = [];
+var elementTransactionOverlays = [];
 
 var overlaysVisible = true;
 var overlaysIdVisible = false;
+var overlaysTransactionVisible = false;
 
-function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) {
+function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions, canvas) {
 
     eventBus.on('shape.changed', function (event) {
         _.defer(function () {
@@ -37,7 +40,20 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
         },
         togglePropertyIdOverlays: function () {
             toggleIdOverlays();
+        },
+        toggleTransactionOverlays: function () {
+            toggleTransactionOverlays();
         }
+    });
+
+
+    var toggelinfo = '<div id="toggleOverlayer" class="overlay">Properties enabled</div>';
+
+    var element = domify(toggelinfo);
+    canvas.getContainer().appendChild(element);
+
+    _.defer(function () {
+        showOverlayerMessage("Properties enabled")
     });
 
     function changeShape(event) {
@@ -47,6 +63,8 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
         }
         _.defer(function () {
             addStyle(element);
+            addTransactionStyle(element);
+            addElementIdStyle(element);
         });
     }
 
@@ -56,10 +74,25 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
             overlays.remove(elementObject[overlay]);
         }
         delete elementOverlays[element.id];
+
+        elementObject = elementIdOverlays[element.id];
+        for (overlay in elementObject) {
+            overlays.remove(elementObject[overlay]);
+        }
+        delete elementIdOverlays[element.id];
+
+        elementObject = elementTransactionOverlays[element.id];
+        for (overlay in elementObject) {
+            overlays.remove(elementObject[overlay]);
+        }
+        delete elementTransactionOverlays[element.id];
     }
 
     function toggleOverlays() {
         if (overlaysVisible) {
+            _.defer(function () {
+                showOverlayerMessage("Properties disabled")
+            });
             overlaysVisible = false;
             if (elementOverlays !== undefined) {
                 for (var elementCount in elementOverlays) {
@@ -70,6 +103,9 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
                 }
             }
         } else {
+            _.defer(function () {
+                showOverlayerMessage("Properties enabled")
+            });
             overlaysVisible = true;
             var elements = elementRegistry.getAll();
             for (var elementCount in elements) {
@@ -83,6 +119,9 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
 
     function toggleIdOverlays() {
         if (overlaysIdVisible) {
+            _.defer(function () {
+                showOverlayerMessage("ElementId's disabled")
+            });
             overlaysIdVisible = false;
             if (elementIdOverlays !== undefined) {
                 for (var elementCount in elementIdOverlays) {
@@ -93,6 +132,9 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
                 }
             }
         } else {
+            _.defer(function () {
+                showOverlayerMessage("ElementId's enabled")
+            });
             overlaysIdVisible = true;
             var elements = elementRegistry.getAll();
             for (var elementCount in elements) {
@@ -104,8 +146,131 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
         }
     }
 
-    function addElementIdStyle(element) {
+    function toggleTransactionOverlays() {
+        if (overlaysTransactionVisible) {
+            _.defer(function () {
+                showOverlayerMessage("Transactions disabled")
+            });
+            overlaysTransactionVisible = false;
+            if (elementTransactionOverlays !== undefined) {
+                for (var elementCount in elementTransactionOverlays) {
+                    var elementObject = elementTransactionOverlays[elementCount];
+                    for (var overlay in elementObject) {
+                        overlays.remove(elementObject[overlay]);
+                    }
+                }
+            }
+        } else {
+            _.defer(function () {
+                showOverlayerMessage("Transactions enabled")
+            });
+            overlaysTransactionVisible = true;
+            var elements = elementRegistry.getAll();
+            for (var elementCount in elements) {
+                var elementObject = elements[elementCount];
+                if (elementObject.businessObject.$instanceOf('bpmn:FlowNode') || elementObject.businessObject.$instanceOf('bpmn:Participant')) {
+                    addTransactionStyle(elementObject);
+                }
+            }
+        }
+    }
 
+    function addTransactionStyle(element) {
+        if (elementTransactionOverlays[element.id] !== undefined && elementTransactionOverlays[element.id].length !== 0) {
+            for (var overlay in elementTransactionOverlays[element.id]) {
+                overlays.remove(elementTransactionOverlays[element.id][overlay]);
+            }
+        }
+
+        elementTransactionOverlays[element.id] = [];
+
+        //Do not process the label of an element
+        if (element.type === "label") {
+            return;
+        }
+
+        if (!overlaysTransactionVisible) {
+            return;
+        }
+
+        var incomings = element.incoming;
+        var outgoings = element.outgoing;
+
+        for (var incoming in incomings) {
+            if (element.businessObject.asyncBefore) {
+                if (incomings[incoming].type === "bpmn:SequenceFlow") {
+
+                    var top = element.y - incomings[incoming].waypoints[incomings[incoming].waypoints.length - 1].y;
+                    var left = element.x - incomings[incoming].waypoints[incomings[incoming].waypoints.length - 1].x;
+                    elementTransactionOverlays[element.id].push(
+                        overlays.add(element, 'badge', {
+                            position: {
+                                top: -top,
+                                left: -left
+                            },
+                            html: '<div class="transaction transaction-before" data-badge="T"></div>'
+                        })
+                    );
+                }
+            }
+        }
+
+        for (var outgoing in outgoings) {
+            if (element.businessObject.asyncAfter) {
+                if (outgoings[outgoing].type === "bpmn:SequenceFlow") {
+
+                    var top = element.y - outgoings[outgoing].waypoints[0].y;
+                    var left = element.x - outgoings[outgoing].waypoints[0].x;
+                    elementTransactionOverlays[element.id].push(
+                        overlays.add(element, 'badge', {
+                            position: {
+                                top: -top,
+                                left: -left
+                            },
+                            html: '<div class="transaction transaction-after" data-badge="T"></div>'
+                        })
+                    );
+                }
+            }
+        }
+
+        //Calculate Async on start & end nodes
+        if (outgoings.length === 0 && element.businessObject.asyncAfter) {
+            elementTransactionOverlays[element.id].push(
+                overlays.add(element, 'badge', {
+                    position: {
+                        top: element.height / 2,
+                        left: element.width
+                    },
+                    html: '<div class="transaction transaction-after" data-badge="T"></div>'
+                })
+            );
+        }
+
+        //Calculate Async on start & end nodes
+        if (incomings.length === 0 && element.businessObject.asyncBefore) {
+            elementTransactionOverlays[element.id].push(
+                overlays.add(element, 'badge', {
+                    position: {
+                        top: element.height / 2,
+                        left: 0
+                    },
+                    html: '<div class="transaction transaction-before" data-badge="T"></div>'
+                })
+            );
+        }
+
+    }
+
+    function showOverlayerMessage(message) {
+        document.getElementById("toggleOverlayer").innerHTML = message;
+        document.getElementById("toggleOverlayer").style.opacity = 100;
+        window.setTimeout(function () {
+            document.getElementById("toggleOverlayer").style.opacity = 0;
+        }, 4000);
+    }
+
+    function addElementIdStyle(element) {
         if (elementIdOverlays[element.id] !== undefined && elementIdOverlays[element.id].length !== 0) {
             for (var overlay in elementIdOverlays[element.id]) {
                 overlays.remove(elementIdOverlays[element.id][overlay]);
@@ -114,9 +279,13 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
 
         elementIdOverlays[element.id] = [];
 
+        if (!overlaysIdVisible) {
+            return;
+        }
+
         if (element.businessObject.id !== undefined &&
             element.businessObject.id.length > 0 &&
-            element.type !== "label" ) {
+            element.type !== "label") {
 
             var text = element.businessObject.id;
             text = text.replace(/(?:\r\n|\r|\n)/g, '<br />');
@@ -379,7 +548,7 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions) 
 
 }
 
-PropertyInfoPlugin.$inject = ['eventBus', 'overlays', 'elementRegistry', 'editorActions'];
+PropertyInfoPlugin.$inject = ['eventBus', 'overlays', 'elementRegistry', 'editorActions', 'canvas'];
 
 module.exports = {
     __init__: ['clientPlugin'],

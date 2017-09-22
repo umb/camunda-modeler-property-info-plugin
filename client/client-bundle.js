@@ -48,7 +48,7 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions, 
     });
 
 
-    var toggelinfo = '<div id="toggleOverlayer" class="overlay">Properties enabled</div>';
+    var toggelinfo = '<div id="toggleOverlayer" class="PropertyInfoPlugin_overlay">Properties enabled</div>';
 
     var element = domify(toggelinfo);
     canvas.getContainer().appendChild(element);
@@ -552,8 +552,8 @@ function PropertyInfoPlugin(eventBus, overlays, elementRegistry, editorActions, 
 PropertyInfoPlugin.$inject = ['eventBus', 'overlays', 'elementRegistry', 'editorActions', 'canvas'];
 
 module.exports = {
-    __init__: ['clientPlugin'],
-    clientPlugin: ['type', PropertyInfoPlugin]
+    __init__: ['propertyInfoPlugin'],
+    propertyInfoPlugin: ['type', PropertyInfoPlugin]
 };
 },{"lodash":5,"min-dom/lib/domify":6}],2:[function(require,module,exports){
 var registerBpmnJSPlugin = require('camunda-modeler-plugin-helpers').registerBpmnJSPlugin;

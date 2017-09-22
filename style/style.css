@@ -92,7 +92,7 @@
     #3499FF, #3B85E5, #3E71CC, #3E5EB4, #3D4B9C, #3A3985);
     box-shadow:0 0 1px #333;
 }
-.overlay {
+.PropertyInfoPlugin_overlay {
     height: 30px;
     width: 200px;
     position: inherit;
